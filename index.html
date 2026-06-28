@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Digital Time Capsule Unlock Helper</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg-a: #071119;
+      --bg-b: #10231f;
+      --card: #111b24;
+      --card-2: #172833;
+      --line: #37d7c1;
+      --line-soft: rgba(55, 215, 193, 0.28);
+      --text: #eef9f7;
+      --muted: #9db3b5;
+      --warn: #ffb14a;
+      --bad: #ff5f65;
+      --good: #6dff9d;
+      --button: #37d7c1;
+      --button-text: #061214;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 18% 12%, rgba(55, 215, 193, 0.18), transparent 28rem),
+        linear-gradient(135deg, var(--bg-a), var(--bg-b));
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .card {
+      width: min(100%, 620px);
+      border: 1px solid var(--line-soft);
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(23, 40, 51, 0.96), rgba(9, 17, 24, 0.98));
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      padding: clamp(22px, 4vw, 38px);
+    }
+
+    .top {
+      display: grid;
+      grid-template-columns: 96px 1fr;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .capsule {
+      width: 92px;
+      height: 92px;
+      border: 2px solid var(--line);
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      position: relative;
+      background: radial-gradient(circle, rgba(55, 215, 193, 0.14), transparent 68%);
+      box-shadow: 0 0 34px rgba(55, 215, 193, 0.18);
+    }
+
+    .capsule::before {
+      content: "";
+      width: 48px;
+      height: 36px;
+      border: 4px solid var(--line);
+      border-radius: 8px;
+      transform: translateY(12px);
+      background: #0d1820;
+    }
+
+    .capsule::after {
+      content: "";
+      position: absolute;
+      width: 34px;
+      height: 28px;
+      border: 4px solid var(--line);
+      border-bottom: 0;
+      border-radius: 18px 18px 0 0;
+      top: 22px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(2rem, 5vw, 3.15rem);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.55;
+    }
+
+    .target {
+      margin: 26px 0 20px;
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.035);
+      padding: 14px 16px;
+      color: var(--muted);
+    }
+
+    .target strong {
+      color: var(--warn);
+      font-weight: 700;
+      text-align: right;
+    }
+
+    .actions {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 8px;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 800;
+      letter-spacing: 0;
+      transition: transform 140ms ease, box-shadow 140ms ease, opacity 140ms ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.45;
+      transform: none;
+    }
+
+    #connectButton {
+      min-height: 58px;
+      padding: 0 24px;
+      background: var(--button);
+      color: var(--button-text);
+      box-shadow: 0 12px 32px rgba(55, 215, 193, 0.22);
+      font-size: 1.05rem;
+    }
+
+    #sendButton {
+      min-height: 46px;
+      padding: 0 18px;
+      background: #253643;
+      color: var(--text);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+    }
+
+    .status {
+      border: 1px solid var(--line-soft);
+      border-radius: 8px;
+      background: rgba(5, 10, 14, 0.54);
+      padding: 14px;
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 28px;
+    }
+
+    .light {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: var(--warn);
+      box-shadow: 0 0 18px rgba(255, 177, 74, 0.55);
+      flex: 0 0 auto;
+    }
+
+    .light.good {
+      background: var(--good);
+      box-shadow: 0 0 18px rgba(109, 255, 157, 0.55);
+    }
+
+    .light.bad {
+      background: var(--bad);
+      box-shadow: 0 0 18px rgba(255, 95, 101, 0.55);
+    }
+
+    #statusText {
+      margin: 0;
+      color: var(--text);
+      line-height: 1.45;
+    }
+
+    .progress {
+      height: 7px;
+      margin-top: 12px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #0b151c;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .progress span {
+      display: block;
+      width: 35%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, transparent, var(--line), transparent);
+      animation: sweep 1.2s linear infinite;
+    }
+
+    @keyframes sweep {
+      from { transform: translateX(-120%); }
+      to { transform: translateX(320%); }
+    }
+
+    .note {
+      margin: 16px 0 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.55;
+    }
+
+    .log {
+      margin: 18px 0 0;
+      padding: 12px;
+      height: 142px;
+      overflow: auto;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      background: #05090d;
+      color: #b8f7ed;
+      font: 0.86rem/1.5 ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+      white-space: pre-wrap;
+    }
+
+    @media (max-width: 560px) {
+      .top {
+        grid-template-columns: 1fr;
+        justify-items: center;
+        text-align: center;
+      }
+
+      .target,
+      .actions {
+        grid-template-columns: 1fr;
+      }
+
+      .target {
+        display: grid;
+      }
+
+      .target strong {
+        text-align: left;
+      }
+
+      #connectButton,
+      #sendButton {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <section class="top" aria-labelledby="title">
+      <div class="capsule" aria-hidden="true"></div>
+      <div>
+        <h1 id="title">Digital Time Capsule</h1>
+        <p class="subtitle">
+          Connect the Arduino over USB and approve the browser prompt. This page sends the current Unix time to the capsule so it can decide whether the date has arrived.
+        </p>
+      </div>
+    </section>
+
+    <div class="target">
+      <span>Configured unlock target</span>
+      <strong id="targetDate">Jan 1, 2030 00:00 UTC</strong>
+    </div>
+
+    <div class="actions">
+      <button id="connectButton" type="button">Connect to Time Capsule</button>
+      <button id="sendButton" type="button" disabled>Send Time Again</button>
+    </div>
+
+    <section class="status" aria-live="polite">
+      <div class="status-row">
+        <span id="statusLight" class="light"></span>
+        <p id="statusText">Waiting for you to connect. Chrome or Edge is recommended for Web Serial.</p>
+      </div>
+      <div class="progress" aria-hidden="true"><span></span></div>
+    </section>
+
+    <p class="note">
+      This helper uses the computer's local clock. For a stronger time lock, host this page with a small server that checks trusted internet time and releases a key only after the unlock date.
+    </p>
+
+    <pre id="log" class="log" aria-label="Serial log">Serial log ready.</pre>
+  </main>
+
+  <script>
+    const UNLOCK_TIME = 1893456000; // Jan 1, 2030 00:00:00 UTC
+    const TARGET_DATE = "Jan 1, 2030 00:00 UTC";
+
+    const connectButton = document.getElementById("connectButton");
+    const sendButton = document.getElementById("sendButton");
+    const statusText = document.getElementById("statusText");
+    const statusLight = document.getElementById("statusLight");
+    const logEl = document.getElementById("log");
+    document.getElementById("targetDate").textContent = TARGET_DATE;
+
+    let port;
+    let reader;
+    let writer;
+    let readBuffer = "";
+    let connected = false;
+
+    function setStatus(message, tone = "warn") {
+      statusText.textContent = message;
+      statusLight.classList.toggle("good", tone === "good");
+      statusLight.classList.toggle("bad", tone === "bad");
+    }
+
+    function log(message) {
+      const time = new Date().toLocaleTimeString();
+      logEl.textContent += `\n[${time}] ${message}`;
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function wait(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async function sendLine(line) {
+      if (!writer) {
+        throw new Error("Serial writer is not ready.");
+      }
+      const data = new TextEncoder().encode(`${line}\n`);
+      await writer.write(data);
+      log(`> ${line}`);
+    }
+
+    async function sendNow(reason = "Sending current time") {
+      const unix = Math.floor(Date.now() / 1000);
+      const localDate = new Date(unix * 1000).toLocaleString();
+      setStatus(`${reason}: ${localDate}`, unix >= UNLOCK_TIME ? "good" : "warn");
+      await sendLine(`NOW:${unix}`);
+    }
+
+    function handleArduinoLine(line) {
+      if (!line) return;
+      log(`< ${line}`);
+
+      if (line === "TIME?") {
+        sendNow("Arduino requested time").catch(error => {
+          setStatus(error.message, "bad");
+          log(`Error: ${error.message}`);
+        });
+        return;
+      }
+
+      if (line === "STATUS:LOCKED") {
+        setStatus("Capsule is sealed. Sending time will verify the date.", "warn");
+      } else if (line === "STATUS:UNLOCKED") {
+        setStatus("Date verified. The capsule is opening.", "good");
+      } else if (line === "STATUS:TOO_EARLY") {
+        setStatus("Not yet. The capsule should stay sealed.", "warn");
+      } else if (line === "STATUS:TAMPER") {
+        setStatus("The Arduino reported missing, corrupt, or mismatched capsule files.", "bad");
+      } else if (line === "ERROR:SD") {
+        setStatus("The Arduino could not initialize the SD card.", "bad");
+      } else if (line === "ERROR:TIME_PARSE") {
+        setStatus("The Arduino could not understand the time message.", "bad");
+      }
+    }
+
+    async function readLoop() {
+      const decoder = new TextDecoder();
+      reader = port.readable.getReader();
+      try {
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          readBuffer += decoder.decode(value, { stream: true });
+          const parts = readBuffer.split(/\r?\n/);
+          readBuffer = parts.pop();
+          for (const part of parts) {
+            handleArduinoLine(part.trim());
+          }
+        }
+      } catch (error) {
+        log(`Read stopped: ${error.message}`);
+      } finally {
+        reader.releaseLock();
+      }
+    }
+
+    async function connect() {
+      if (!("serial" in navigator)) {
+        setStatus("Web Serial is not available here. Open this page in Chrome or Edge.", "bad");
+        return;
+      }
+
+      try {
+        setStatus("Waiting for browser permission...", "warn");
+        port = await navigator.serial.requestPort();
+        await port.open({ baudRate: 9600 });
+        writer = port.writable.getWriter();
+        connected = true;
+
+        connectButton.textContent = "Connected";
+        connectButton.disabled = true;
+        sendButton.disabled = false;
+        setStatus("Connected. Sending the current time now.", "good");
+        log("Serial port opened at 9600 baud.");
+
+        readLoop();
+        await wait(700);
+        await sendNow("Connected");
+      } catch (error) {
+        setStatus(error.message || "Connection was cancelled.", "bad");
+        log(`Connection error: ${error.message}`);
+      }
+    }
+
+    connectButton.addEventListener("click", connect);
+    sendButton.addEventListener("click", () => {
+      sendNow("Manual resend").catch(error => {
+        setStatus(error.message, "bad");
+        log(`Error: ${error.message}`);
+      });
+    });
+
+    if ("serial" in navigator) {
+      navigator.serial.addEventListener("disconnect", () => {
+        connected = false;
+        writer = undefined;
+        setStatus("The serial device disconnected.", "bad");
+        connectButton.textContent = "Connect to Time Capsule";
+        connectButton.disabled = false;
+        sendButton.disabled = true;
+        log("Serial device disconnected.");
+      });
+    } else {
+      connectButton.disabled = true;
+      setStatus("Web Serial is not available. Use Chrome or Edge on a desktop computer.", "bad");
+    }
+  </script>
+</body>
+</html>

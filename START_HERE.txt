@@ -1,0 +1,17 @@
+DIGITAL TIME CAPSULE
+
+This little screen is sealed until its unlock date.
+
+When you are ready to check it:
+
+1. Plug the Arduino/time capsule into a computer with the USB cable.
+2. Open unlock.html in Chrome or Edge.
+3. Click "Connect to Time Capsule".
+4. Choose the Arduino serial device if the browser asks.
+
+The page sends the current computer time to the capsule.
+If the unlock date has arrived, the screen opens and shows the photos.
+If not, it stays sealed.
+
+Do not remove the SD card to look for photos. The memories are meant to open
+through the time capsule screen.
