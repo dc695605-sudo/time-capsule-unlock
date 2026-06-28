@@ -165,21 +165,6 @@
       border: 1px solid rgba(255, 255, 255, 0.09);
     }
 
-    .gallery-actions {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin: 0 0 18px;
-    }
-
-    .gallery-actions button {
-      min-height: 48px;
-      padding: 0 18px;
-      background: #253643;
-      color: var(--text);
-      border: 1px solid rgba(55, 215, 193, 0.22);
-    }
-
     .status {
       border: 1px solid var(--line-soft);
       border-radius: 8px;
@@ -283,8 +268,7 @@
       }
 
       #connectButton,
-      #sendButton,
-      .gallery-actions button {
+      #sendButton {
         width: 100%;
       }
     }
@@ -312,11 +296,6 @@
       <button id="sendButton" type="button" disabled>Send Time Again</button>
     </div>
 
-    <div class="gallery-actions">
-      <button id="prevButton" type="button" disabled>Previous Photo</button>
-      <button id="nextButton" type="button" disabled>Next Photo</button>
-    </div>
-
     <section class="status" aria-live="polite">
       <div class="status-row">
         <span id="statusLight" class="light"></span>
@@ -338,8 +317,6 @@
 
     const connectButton = document.getElementById("connectButton");
     const sendButton = document.getElementById("sendButton");
-    const prevButton = document.getElementById("prevButton");
-    const nextButton = document.getElementById("nextButton");
     const statusText = document.getElementById("statusText");
     const statusLight = document.getElementById("statusLight");
     const logEl = document.getElementById("log");
@@ -399,10 +376,6 @@
         setStatus("Capsule is sealed. Sending time will verify the date.", "warn");
       } else if (line === "STATUS:UNLOCKED") {
         setStatus("Date verified. The capsule is opening.", "good");
-      } else if (line === "STATUS:NEXT") {
-        setStatus("Showing the next photo.", "good");
-      } else if (line === "STATUS:PREV") {
-        setStatus("Showing the previous photo.", "good");
       } else if (line === "STATUS:TOO_EARLY") {
         setStatus("Not yet. The capsule should stay sealed.", "warn");
       } else if (line === "STATUS:TAMPER") {
@@ -451,8 +424,6 @@
         connectButton.textContent = "Connected";
         connectButton.disabled = true;
         sendButton.disabled = false;
-        prevButton.disabled = false;
-        nextButton.disabled = false;
         setStatus("Connected. Sending the current time now.", "good");
         log("Serial port opened at 9600 baud.");
 
@@ -473,20 +444,6 @@
       });
     });
 
-    prevButton.addEventListener("click", () => {
-      sendLine("PREV").catch(error => {
-        setStatus(error.message, "bad");
-        log(`Error: ${error.message}`);
-      });
-    });
-
-    nextButton.addEventListener("click", () => {
-      sendLine("NEXT").catch(error => {
-        setStatus(error.message, "bad");
-        log(`Error: ${error.message}`);
-      });
-    });
-
     if ("serial" in navigator) {
       navigator.serial.addEventListener("disconnect", () => {
         connected = false;
@@ -495,8 +452,6 @@
         connectButton.textContent = "Connect to Time Capsule";
         connectButton.disabled = false;
         sendButton.disabled = true;
-        prevButton.disabled = true;
-        nextButton.disabled = true;
         log("Serial device disconnected.");
       });
     } else {
