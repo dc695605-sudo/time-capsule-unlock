@@ -353,10 +353,35 @@
       log(`> ${line}`);
     }
 
+    async function getCurrentUnixTime() {
+      if (location.protocol === "https:") {
+        try {
+          const timeUrl = new URL(location.href);
+          timeUrl.searchParams.set("_timecheck", Date.now().toString());
+          const response = await fetch(timeUrl.toString(), { cache: "no-store" });
+          const serverDate = response.headers.get("date");
+          const serverMs = Date.parse(serverDate || "");
+          if (Number.isFinite(serverMs)) {
+            return {
+              unix: Math.floor(serverMs / 1000),
+              source: "website server time"
+            };
+          }
+        } catch (error) {
+          log(`Server time unavailable: ${error.message}`);
+        }
+      }
+
+      return {
+        unix: Math.floor(Date.now() / 1000),
+        source: "computer clock"
+      };
+    }
+
     async function sendNow(reason = "Sending current time") {
-      const unix = Math.floor(Date.now() / 1000);
+      const { unix, source } = await getCurrentUnixTime();
       const localDate = new Date(unix * 1000).toLocaleString();
-      setStatus(`${reason}: ${localDate}`, unix >= UNLOCK_TIME ? "good" : "warn");
+      setStatus(`${reason} using ${source}: ${localDate}`, unix >= UNLOCK_TIME ? "good" : "warn");
       await sendLine(`NOW:${unix}`);
     }
 
